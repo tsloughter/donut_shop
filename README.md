@@ -1,0 +1,85 @@
+# Little Donut
+
+A cozy 3D donut-shop game for a young child, built in **Godot 4.5.2** with original **Blender** characters and shop art. Designed for landscape Android touchscreens; also playable with a mouse on Linux.
+
+## Play
+
+1. **Cut:** tap the round cutter to press a donut out of the dough.
+2. **Bake:** drag the donut up into Pip's oven, or tap **Bake**. It takes four seconds, with no burning or failure.
+3. **Frost:** pick strawberry, chocolate, vanilla, or blueberry and rub over the donut. Colors can overlap and mix.
+4. **Decorate:** drag a rainbow, star, or sugar-pearl jar onto the donut. You can also select a jar and tap or sweep over the donut. **Clear tops** removes the toppings without removing frosting.
+5. **Serve:** celebrate your creation with Pip the bear and Bean the bunny, then **Make another**.
+
+The camera stays at the workbench. There are no movement controls, orders to remember, scores, time limits, ads, purchases, accounts, or network features. The sound button toggles gentle synthesized chimes. Visual cues and large illustrated tools supplement the written instructions; a parent may want to demonstrate the first recipe. No spoken narration is included.
+
+## Install on Android
+
+The built package is `builds/little-donut-android.apk` (a debug-signed prototype for sideloading).
+
+- Copy the APK to your Android phone/tablet and open it from Files.
+- If Android asks, allow that file manager to install this app.
+- Open **Little Donut** and turn the device sideways.
+
+The package targets ARM64 and ARMv7 devices, Android 7.0/API 24 or newer, using Godot's OpenGL compatibility renderer. It requests no Android permissions. It is not a Play Store release. The APK was exported and its signature/package checked here; performance and touch behavior on your particular physical Android device still need testing.
+
+A Linux executable is also provided at `builds/little-donut-linux.x86_64`. Double-click it, or launch it from a terminal. If your graphics driver has trouble, run `LIBGL_ALWAYS_SOFTWARE=1 builds/little-donut-linux.x86_64`.
+
+## Open and edit
+
+Import `project.godot` into Godot **4.5.2** (standard/GDScript edition), then press **F6** in the main scene or **F5** to play. Later Godot 4.x versions may also work but were not used for this build. Blender is **not needed to play** or import the Godot project: the exported GLBs are already included.
+
+`tools/run.sh` discovers Godot on PATH, accepts a `GODOT_BIN` override, and can use an installed Godot Flatpak. Run `tools/run.sh --editor` to open the project.
+
+## Project layout
+
+| Location | Purpose |
+| --- | --- |
+| `scripts/game.gd` | Recipe state machine, touch/mouse input, helpers, shop camera, UI, sounds |
+| `scripts/donut.gd` | Procedural torus, paintable frosting texture, bounded topping geometry |
+| `scripts/toy_icon.gd` | Original vector illustrations for the touch tools |
+| `scenes/main.tscn` | Entry scene |
+| `assets/*.glb` | Original Blender shop, bear, and bunny meshes |
+| `art/*.blend` | Editable Blender source for the three assets |
+| `tools/create_assets.py` | Reproducible Blender modeling and GLB export script |
+| `tests/input_test.gd` | Godot viewport touch/mouse event integration test |
+| `export_presets.cfg` | Android and Linux export presets |
+
+To rebuild the art with Blender 5.2:
+
+```sh
+blender --background --factory-startup --python tools/create_assets.py
+```
+
+For the installed Flatpak, use `flatpak run org.blender.Blender` in place of `blender`. The script regenerates the three GLBs and three `.blend` sources. Art and build folders have `.gdignore` files so Godot imports only runtime assets.
+
+## Android build setup
+
+Install the **matching Godot 4.5.2 export templates**, a full **JDK 17**, and the **Android SDK** with platform-tools and build-tools 35.0.1. Set **Java SDK Path** and **Android SDK Path** in Godot's **Editor Settings → Export → Android**, then run:
+
+```sh
+tools/build_android.sh
+```
+
+Godot generates/uses a development keystore. This build’s key is saved locally at `builds/debug.keystore` (standard debug alias `androiddebugkey`, password `android`). Set Godot’s Debug Keystore field to that file to keep later builds installable as updates. Signing keys and machine-specific paths are deliberately not committed. The preset disables Gradle and exports a standard APK. Android texture imports are enabled in `project.godot`.
+
+See the [official Godot Android export guide](https://docs.godotengine.org/en/4.5/tutorials/export/exporting_for_android.html) for SDK installation details or production signing.
+
+For a Linux release, install its matching export template and run:
+
+```sh
+tools/run.sh --headless --export-release Linux builds/little-donut-linux.x86_64
+```
+
+## Verification and limits
+
+```sh
+tools/test.sh
+# With a graphical display, capture each stage into builds/previews:
+tools/run.sh -- --visual-test
+```
+
+Tests cover the complete recipe, touch and mouse input, donut-to-oven dragging, continuous frosting strokes, color changes, extra-finger handling, jar dragging, rejecting toppings in the hole, the 220-topping cap, serving, and replay. The scene was also rendered and reviewed using Mesa software OpenGL on Linux.
+
+This is a playable first prototype: one donut shape, one shop, an oven, four frostings, and three topping types. Helpers have simple procedural work/idle animations. Frosting and the current donut are held in memory; mute preference and completed-donut count are saved locally. There is no gallery or resume-after-app-termination yet. Toppings stop accumulating at 220 to bound mobile rendering cost. The UI uses a fixed landscape design with aspect-preserving scaling and may show side bars on wide phones.
+
+The characters, models, icons, and sounds were made specifically for this project. The bundled Godot runtime has its own open-source licenses, available in `builds/GODOT-LICENSE.txt` and the [Godot license page](https://godotengine.org/license/).

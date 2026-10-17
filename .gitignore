@@ -1,0 +1,7 @@
+.godot/
+builds/*
+!builds/.gitkeep
+!builds/.gdignore
+*.blend1
+*.keystore
+.DS_Store
