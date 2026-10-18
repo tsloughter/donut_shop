@@ -3,6 +3,7 @@ config_version=5
 
 [application]
 config/name="Little Donut"
+config/description="Little Donut is free software licensed under GNU AGPL v3 or later (AGPL-3.0-or-later). See LICENSE.txt and the in-game Licenses dialog."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://assets/icon.svg"

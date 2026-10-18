@@ -27,6 +27,7 @@ var next_button:Button
 var tool_row:HBoxContainer
 var step_row:HBoxContainer
 var sound_button:Button
+var license_dialog:AcceptDialog
 var progress:ProgressBar
 var cursor:Control
 var hint:Control
@@ -124,6 +125,7 @@ func _build_ui() -> void:
 	var top_back:=Panel.new();top_back.position=Vector2.ZERO;top_back.size=Vector2(1280,202);top_back.add_theme_stylebox_override("panel",_style(CREAM,0));top_back.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(top_back)
 	var brand:=_label("little donut",36,INK);brand.position=Vector2(36,22);ui.add_child(brand)
 	var eyebrow:=_label("A HAPPY LITTLE BAKERY",11,GREEN);eyebrow.position=Vector2(38,65);ui.add_child(eyebrow)
+	var licenses_button:=Button.new();licenses_button.name="LicensesButton";licenses_button.text="Licenses";licenses_button.position=Vector2(300,25);licenses_button.size=Vector2(120,57);licenses_button.pressed.connect(_show_licenses);ui.add_child(licenses_button)
 	step_row=HBoxContainer.new();step_row.position=Vector2(445,25);step_row.add_theme_constant_override("separation",10);ui.add_child(step_row)
 	for i in range(4):
 		var panel:=Panel.new();panel.custom_minimum_size=Vector2(145,57);panel.add_theme_stylebox_override("panel",_style(CREAM,20));step_row.add_child(panel)
@@ -145,6 +147,28 @@ func _build_ui() -> void:
 	cursor=Icon.new();cursor.kind="bowl";cursor.size=Vector2(80,80);cursor.visible=false;ui.add_child(cursor)
 	hint=Icon.new();hint.kind="hand";hint.tint=CREAM;hint.size=Vector2(65,65);ui.add_child(hint)
 	celebration=_label("",34,GREEN);celebration.position=Vector2(385,560);celebration.size=Vector2(520,58);celebration.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;ui.add_child(celebration)
+
+func _show_licenses() -> void:
+	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false
+	if not is_instance_valid(license_dialog):
+		license_dialog=AcceptDialog.new()
+		license_dialog.title="Little Donut — Licenses"
+		license_dialog.exclusive=true
+		license_dialog.ok_button_text="Close"
+		add_child(license_dialog)
+		var tabs:=TabContainer.new()
+		license_dialog.add_child(tabs)
+		tabs.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tabs.offset_left=20;tabs.offset_top=20;tabs.offset_right=-20;tabs.offset_bottom=-60
+		var project_notice:="Little Donut\nCopyright (C) 2026 Little Donut contributors.\n\n"
+		project_notice+="Original code and assets: GNU Affero General Public License, version 3 or (at your option) any later version (AGPL-3.0-or-later).\n"
+		project_notice+="This program comes with ABSOLUTELY NO WARRANTY. You may redistribute and modify it under the license below.\n\n"
+		project_notice+="Corresponding Source and build instructions:\nhttps://github.com/tsloughter/donut_shop\n\n"
+		for entry in [["Little Donut (AGPL)",project_notice+FileAccess.get_file_as_string("res://LICENSE.txt")],["Godot and third parties",FileAccess.get_file_as_string("res://assets/GODOT-LICENSE.txt")]]:
+			var text:=RichTextLabel.new()
+			text.name=entry[0];text.text=entry[1];text.selection_enabled=true
+			tabs.add_child(text)
+	license_dialog.popup_centered(Vector2i(1000,600))
 
 func _reset_recipe() -> void:
 	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false;transitioning=false;cut_done=false
@@ -217,6 +241,7 @@ func _select_tool(index:int) -> void:
 	cursor.queue_redraw()
 
 func _input(event:InputEvent) -> void:
+	if is_instance_valid(license_dialog) and license_dialog.visible:return
 	if event is InputEventScreenTouch:
 		if event.pressed and pointer_id==-999:_pointer_down(event.position,event.index)
 		elif not event.pressed and event.index==pointer_id:_pointer_up(event.position)

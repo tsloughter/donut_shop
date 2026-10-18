@@ -36,6 +36,18 @@ func run() -> void:
 	await create_timer(6).timeout
 	check(game.stage==game.Stage.FROST,"Dragging to oven must complete a bake")
 	var spot:Vector2=game.camera.unproject_position(game.donut.to_global(Vector3(.88,.38,0)))
+	# Legal notices must be readable without painting through the dialog.
+	game.ui.get_node("LicensesButton").pressed.emit()
+	await process_frame
+	check(game.license_dialog.visible,"Licenses button must open the notices")
+	var tabs:TabContainer=game.license_dialog.get_child(0)
+	check(tabs.get_child(0).text.contains("AGPL-3.0-or-later") and tabs.get_child(0).text.contains("END OF TERMS AND CONDITIONS"),"Project tab must include the full AGPL and version notice")
+	check(tabs.get_child(1).text.contains("THIRD-PARTY COMPONENTS"),"Godot tab must include engine and third-party notices")
+	var unpainted:PackedByteArray=game.donut.paint_image.get_data()
+	touch(spot,true);touch(spot,false)
+	check(game.donut.paint_image.get_data()==unpainted,"License dialog must block gameplay input")
+	game.license_dialog.hide()
+	await process_frame
 	touch(spot,true,2)
 	check(game.pointer_id==2,"First finger must own the stroke")
 	touch(spot+Vector2(20,0),true,7)

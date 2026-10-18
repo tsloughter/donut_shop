@@ -82,4 +82,14 @@ Tests cover the complete recipe, touch and mouse input, donut-to-oven dragging, 
 
 This is a playable first prototype: one donut shape, one shop, an oven, four frostings, and three topping types. Helpers have simple procedural work/idle animations. Frosting and the current donut are held in memory; mute preference and completed-donut count are saved locally. There is no gallery or resume-after-app-termination yet. Toppings stop accumulating at 220 to bound mobile rendering cost. The UI uses a fixed landscape design with aspect-preserving scaling and may show side bars on wide phones.
 
-The characters, models, icons, and sounds were made specifically for this project. The bundled Godot runtime has its own open-source licenses, available in `builds/GODOT-LICENSE.txt` and the [Godot license page](https://godotengine.org/license/).
+## License
+
+Copyright (C) 2026 Little Donut contributors.
+
+Little Donut's original code, scenes, characters, models, icons, sounds, and editable art sources are licensed under the **GNU Affero General Public License, version 3 or (at your option) any later version** (`AGPL-3.0-or-later`). See [LICENSE.txt](LICENSE.txt) for the full terms. This program is distributed without any warranty, including the implied warranties of merchantability or fitness for a particular purpose.
+
+Corresponding source, including the editable art and build instructions, is available in the [project repository](https://github.com/tsloughter/donut_shop). When distributing a binary, provide its matching Corresponding Source under the AGPL's terms.
+
+The in-game **Licenses** button displays the project license, source location, and Godot's notices. Both export presets include `LICENSE.txt` and `assets/GODOT-LICENSE.txt` so these remain readable in Android and Linux builds.
+
+The bundled Godot runtime remains under its own MIT license and third-party licenses. Their full notices are in [assets/GODOT-LICENSE.txt](assets/GODOT-LICENSE.txt), with another generated copy at `builds/GODOT-LICENSE.txt`. Regenerate them for a new engine version with `tools/run.sh --headless --script tools/write_licenses.gd`. See also the [Godot license page](https://godotengine.org/license/) and [Godot's license inclusion guidance](https://docs.godotengine.org/en/4.5/about/complying_with_licenses.html).
