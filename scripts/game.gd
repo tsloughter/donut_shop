@@ -46,8 +46,8 @@ var chime_cache: Dictionary = {}
 @onready var door: Node3D = %Door
 @onready var bear: Node3D = %Bear
 @onready var bunny: Node3D = %Bunny
-@onready var bear_paw: Node3D = %Bear/Paw
-@onready var bunny_paw: Node3D = %Bunny/Paw
+@onready var bear_paws: Array[Node3D] = [%Bear/PawLeft, %Bear/PawRight]
+@onready var bunny_paws: Array[Node3D] = [%Bunny/PawLeft, %Bunny/PawRight]
 @onready var spoon: Node3D = %Spoon
 @onready var confetti_small: CPUParticles3D = %ConfettiSmall
 @onready var confetti_big: CPUParticles3D = %ConfettiBig
@@ -77,8 +77,11 @@ func _process(delta: float) -> void:
 	bear.rotation.z = sin(elapsed * 1.3) * .025
 	bunny.position.y = .8 + sin(elapsed * 2.1 + 1) * .045
 	bunny.rotation.z = sin(elapsed * 1.6) * .03
-	bear_paw.rotation.z = sin(elapsed * 3.2) * .27
-	bunny_paw.rotation.x = sin(elapsed * 3) * .35
+	# Pip waves both paws in opposite directions; Bean stirs with both.
+	bear_paws[0].rotation.z = sin(elapsed * 3.2) * .27
+	bear_paws[1].rotation.z = -sin(elapsed * 3.2) * .27
+	for paw in bunny_paws:
+		paw.rotation.x = sin(elapsed * 3) * .35
 	spoon.rotation = Vector3(sin(elapsed * 3) * .2, 0, cos(elapsed * 3) * .2)
 	if stage == Stage.BAKING and not transitioning:
 		bake_time += delta

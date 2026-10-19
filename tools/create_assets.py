@@ -52,7 +52,6 @@ def make_materials():
     for name, color in COLORS.items():
         m = bpy.data.materials.new(name)
         m.diffuse_color = (*color, 1)
-        m.use_nodes = True
         m.use_backface_culling = True
         # Materials outlive the per-asset scene purge.
         m.use_fake_user = True
@@ -93,13 +92,41 @@ class Group:
             bm.free()
             mesh.materials.append(MATERIALS[material])
             obj = bpy.data.objects.new(mesh.name, mesh)
-            obj.location = pivot
+            obj.location = pivot - (parent.location if parent else Vector())
             obj.parent = parent
-            # Keeps the big faces of beveled boxes flat under smooth shading; applied on export.
-            obj.modifiers.new("Corner normals", "WEIGHTED_NORMAL")
             collection.objects.link(obj)
             objects.append(obj)
         return objects
+
+
+def uv_sphere(bm, segments, rings):
+    """Unit UV sphere with poles on Z. Built by hand because bmesh.ops.create_uvsphere welds
+    its seam through a pointer-keyed hash, which reorders faces from run to run."""
+    top = bm.verts.new((0, 0, 1))
+    bottom = bm.verts.new((0, 0, -1))
+    loops = []
+    for i in range(1, rings):
+        polar = math.pi * i / rings
+        loops.append(
+            [
+                bm.verts.new(
+                    (
+                        math.sin(polar) * math.cos(j * math.tau / segments),
+                        math.sin(polar) * math.sin(j * math.tau / segments),
+                        math.cos(polar),
+                    )
+                )
+                for j in range(segments)
+            ]
+        )
+    for j in range(segments):
+        k = (j + 1) % segments
+        bm.faces.new((top, loops[0][j], loops[0][k]))
+        bm.faces.new((bottom, loops[-1][k], loops[-1][j]))
+    for upper, lower in zip(loops, loops[1:]):
+        for j in range(segments):
+            k = (j + 1) % segments
+            bm.faces.new((upper[j], lower[j], lower[k], upper[k]))
 
 
 def sphere(group, center, radii, material):
@@ -107,7 +134,7 @@ def sphere(group, center, radii, material):
     largest = max(radii)
     segments, rings = (24, 16) if largest >= 0.3 else (16, 10) if largest >= 0.1 else (8, 5)
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=rings, radius=1.0)
+    uv_sphere(bm, segments, rings)
     bm.transform(Matrix.Translation(to_blender(center)) @ size_to_blender(radii))
     set_smooth(bm, True)
     group.add(bm, material)
@@ -117,8 +144,12 @@ def box(group, center, size, material, bevel=0.08):
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
     bm.transform(size_to_blender(size))
+    # Cube faces stay flat; smoothing them would blend normals across their 90 degree edges.
+    # Only the bevel strips are smooth, so no custom normals are needed (and Blender's custom
+    # normal encoding is not reproducible run to run).
+    set_smooth(bm, False)
     if bevel:
-        bmesh.ops.bevel(
+        rounded = bmesh.ops.bevel(
             bm,
             geom=bm.verts[:] + bm.edges[:],
             offset=bevel,
@@ -127,8 +158,11 @@ def box(group, center, size, material, bevel=0.08):
             affect="EDGES",
             clamp_overlap=True,
         )
+        for face in rounded["faces"]:
+            face.smooth = True
+        # Where the bevel is clamped by a thin side it leaves zero-area corner faces.
+        bmesh.ops.dissolve_degenerate(bm, dist=1e-5, edges=bm.edges[:])
     bm.transform(Matrix.Translation(to_blender(center)))
-    set_smooth(bm, True)
     group.add(bm, material)
 
 
@@ -139,8 +173,19 @@ def cylinder(group, center, radius, depth, material):
         bm, cap_ends=True, segments=segments, radius1=radius, radius2=radius, depth=depth
     )
     bm.transform(Matrix.Translation(to_blender(center)))
-    set_smooth(bm, True)
+    bm.normal_update()
+    for face in bm.faces:
+        # Round sides are smooth; the end caps are flat discs.
+        face.smooth = abs(face.normal.z) < 0.5
     group.add(bm, material)
+
+
+def empty(collection, name, position, parent=None):
+    obj = bpy.data.objects.new(name, None)
+    obj.location = to_blender(position) - (parent.location if parent else Vector())
+    obj.parent = parent
+    collection.objects.link(obj)
+    return obj
 
 
 def tube(group, points, radius, material, sides=8):
@@ -200,6 +245,11 @@ def clear_scene():
     bpy.data.orphans_purge(do_recursive=True)
 
 
+HEAD_CENTER = (0, 1.66, 0.025)
+PAW_CENTER_Y = 0.85
+SHOULDER_Y = 1.12
+
+
 def character(kind):
     collection = new_collection(kind)
     fur = kind
@@ -209,40 +259,43 @@ def character(kind):
     box(body, (0, 0.70, 0.44), (0.32, 0.18, 0.045), "white", 0.035)
     for x in (-0.27, 0.27):
         sphere(body, (x, 0.16, 0.10), (0.23, 0.18, 0.32), fur)
-    sphere(body, (0, 1.66, 0.025), (0.63, 0.57, 0.46), fur)
-    if kind == "bear":
-        for x in (-0.48, 0.48):
-            sphere(body, (x, 2.07, 0.01), (0.25, 0.26, 0.18), fur)
-            sphere(body, (x, 2.08, 0.145), (0.15, 0.16, 0.06), "muzzle")
-    else:
-        for x in (-0.29, 0.29):
-            sphere(body, (x, 2.30, -0.01), (0.18, 0.62, 0.16), fur)
-            sphere(body, (x, 2.34, 0.13), (0.09, 0.43, 0.025), "pink")
-    sphere(body, (0, 1.49, 0.421), (0.34, 0.24, 0.12), "muzzle" if kind == "bear" else "white")
-    sphere(body, (0, 1.59, 0.547), (0.095, 0.065, 0.045), "dark")
-    for x in (-0.245, 0.245):
-        sphere(body, (x, 1.77, 0.443), (0.05, 0.071, 0.028), "dark")
-        sphere(body, (x - 0.01, 1.793, 0.47), (0.014, 0.018, 0.009), "white")
-        sphere(body, (x * 1.55, 1.52, 0.403), (0.105, 0.055, 0.025), "pink")
-    smile = []
-    for i in range(17):
-        angle = math.pi + math.pi * i / 16
-        smile.append(Vector((0.13 * math.cos(angle), 1.47 + 0.07 * math.sin(angle), 0.543)))
-    tube(body, smile, 0.012, "dark")
-    if kind == "bear":
-        cylinder(body, (0, 2.16, 0.02), 0.37, 0.21, "white")
-        for x, y in ((-0.24, 2.32), (0, 2.43), (0.24, 2.32)):
-            sphere(body, (x, y, 0.02), (0.28, 0.25, 0.29), "white")
-    else:
+    if kind == "bunny":
         for x in (-0.14, 0.14):
             sphere(body, (x, 1.13, 0.41), (0.15, 0.10, 0.075), "pink")
         sphere(body, (0, 1.13, 0.47), (0.07, 0.07, 0.05), "gold")
     body.realize(collection)
-    # Paws are animated by the game, so each stays its own object.
-    for x in (-0.59, 0.59):
-        paw = Group("Paw")
-        sphere(paw, (x, 0.85, 0.06), (0.19, 0.36, 0.20), fur)
-        paw.realize(collection, origin=(x, 0.85, 0.06))
+    # Everything on the head hangs off one empty so the game can nod or tilt it.
+    head = Group("Head")
+    sphere(head, HEAD_CENTER, (0.63, 0.57, 0.46), fur)
+    if kind == "bear":
+        for x in (-0.48, 0.48):
+            sphere(head, (x, 2.07, 0.01), (0.25, 0.26, 0.18), fur)
+            sphere(head, (x, 2.08, 0.145), (0.15, 0.16, 0.06), "muzzle")
+    else:
+        for x in (-0.29, 0.29):
+            sphere(head, (x, 2.30, -0.01), (0.18, 0.62, 0.16), fur)
+            sphere(head, (x, 2.34, 0.13), (0.09, 0.43, 0.025), "pink")
+    sphere(head, (0, 1.49, 0.421), (0.34, 0.24, 0.12), "muzzle" if kind == "bear" else "white")
+    sphere(head, (0, 1.59, 0.547), (0.095, 0.065, 0.045), "dark")
+    for x in (-0.245, 0.245):
+        sphere(head, (x, 1.77, 0.443), (0.05, 0.071, 0.028), "dark")
+        sphere(head, (x - 0.01, 1.793, 0.47), (0.014, 0.018, 0.009), "white")
+        sphere(head, (x * 1.55, 1.52, 0.403), (0.105, 0.055, 0.025), "pink")
+    smile = []
+    for i in range(17):
+        angle = math.pi + math.pi * i / 16
+        smile.append(Vector((0.13 * math.cos(angle), 1.47 + 0.07 * math.sin(angle), 0.543)))
+    tube(head, smile, 0.012, "dark")
+    if kind == "bear":
+        cylinder(head, (0, 2.16, 0.02), 0.37, 0.21, "white")
+        for x, y in ((-0.24, 2.32), (0, 2.43), (0.24, 2.32)):
+            sphere(head, (x, y, 0.02), (0.28, 0.25, 0.29), "white")
+    head.realize(collection, parent=empty(collection, "Head", HEAD_CENTER), origin=HEAD_CENTER)
+    # Paws are animated by the game, so each is its own object pivoting at the shoulder.
+    for name, x in (("PawLeft", -0.59), ("PawRight", 0.59)):
+        paw = Group(name)
+        sphere(paw, (x, PAW_CENTER_Y, 0.06), (0.19, 0.36, 0.20), fur)
+        paw.realize(collection, origin=(x, SHOULDER_Y, 0.06))
     export(kind, collection)
     save_blend(kind)
     clear_scene()
@@ -268,7 +321,8 @@ def shop():
     for x in (-4.45, -3.7, -2.8):
         sphere(room, (x, 3.65, -3.94), (0.38, 0.18, 0.025), "white")
     box(room, (-3.65, 3.45, -3.90), (0.10, 2.26, 0.10), "white")
-    box(room, (-3.65, 3.45, -3.90), (3.23, 0.10, 0.10), "white")
+    # The crossbar sits a hair behind the mullion so their faces never share a plane.
+    box(room, (-3.65, 3.45, -3.905), (3.23, 0.10, 0.09), "white")
     # Back sign blank; the label is native Godot text.
     box(room, (0, 3.65, -4.05), (3.3, 1.75, 0.20), "mint", 0.30)
     box(room, (0, 3.65, -3.93), (3.05, 1.50, 0.045), "cream", 0.22)
