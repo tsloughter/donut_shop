@@ -1,0 +1,63 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/toy_icon.gd" id="1_icon"]
+
+[sub_resource type="StyleBoxFlat" id="normal"]
+bg_color = Color(0.94902, 0.917647, 0.862745, 1)
+corner_radius_top_left = 17
+corner_radius_top_right = 17
+corner_radius_bottom_right = 17
+corner_radius_bottom_left = 17
+
+[sub_resource type="StyleBoxFlat" id="hover"]
+bg_color = Color(0.898039, 0.909804, 0.843137, 1)
+corner_radius_top_left = 17
+corner_radius_top_right = 17
+corner_radius_bottom_right = 17
+corner_radius_bottom_left = 17
+
+[sub_resource type="StyleBoxFlat" id="pressed"]
+bg_color = Color(0.843137, 0.909804, 0.85098, 1)
+corner_radius_top_left = 17
+corner_radius_top_right = 17
+corner_radius_bottom_right = 17
+corner_radius_bottom_left = 17
+
+[node name="ToolButton" type="Button"]
+custom_minimum_size = Vector2(174, 86)
+focus_mode = 0
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/hover = SubResource("hover")
+theme_override_styles/pressed = SubResource("pressed")
+
+[node name="HBox" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 9.0
+offset_top = 6.0
+offset_right = -9.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Icon" type="Control" parent="HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(65, 65)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("1_icon")
+kind = "bowl"
+
+[node name="Label" type="Label" parent="HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.329412, 0.247059, 0.207843, 1)
+theme_override_font_sizes/font_size = 16
+text = "Tool"
+vertical_alignment = 1
+autowrap_mode = 3

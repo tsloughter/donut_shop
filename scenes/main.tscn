@@ -1,4 +1,399 @@
-[gd_scene load_steps=2 format=3]
-[ext_resource type="Script" path="res://scripts/game.gd" id="1"]
+[gd_scene load_steps=42 format=3]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_o6xl0"]
+[ext_resource type="PackedScene" path="res://assets/shop.glb" id="2_tipki"]
+[ext_resource type="PackedScene" path="res://assets/bear.glb" id="3_85g3d"]
+[ext_resource type="PackedScene" path="res://assets/bunny.glb" id="4_choun"]
+[ext_resource type="Script" path="res://scripts/donut.gd" id="5_ya4ey"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="6_eb6dy"]
+
+[sub_resource type="Environment" id="Environment_a8y0u"]
+background_mode = 1
+background_color = Color(0.95686275, 0.8901961, 0.7882353, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.9019608, 0.8, 1)
+ambient_light_energy = 0.25
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jkv2x"]
+albedo_color = Color(0.91764706, 0.84313726, 0.70980394, 1)
+roughness = 0.72
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_jbj1t"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_muem4"]
+albedo_color = Color(1, 0.94509804, 0.8352941, 1)
+roughness = 0.72
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dp3eg"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0ld40"]
+albedo_color = Color(0.9098039, 0.7411765, 0.4862745, 1)
+roughness = 0.72
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_gqmmt"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yc10j"]
+albedo_color = Color(0.53333336, 0.7176471, 0.6901961, 1)
+roughness = 0.72
+
+[sub_resource type="TorusMesh" id="TorusMesh_jscy8"]
+inner_radius = 1.275
+outer_radius = 1.345
+rings = 48
+ring_segments = 10
+
+[sub_resource type="TorusMesh" id="TorusMesh_pm3ni"]
+inner_radius = 0.415
+outer_radius = 0.485
+rings = 48
+ring_segments = 10
+
+[sub_resource type="BoxMesh" id="BoxMesh_y6deb"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_og1vs"]
+albedo_color = Color(0.9137255, 0.627451, 0.4627451, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_2wyq8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vxglm"]
+albedo_color = Color(0.34901962, 0.2901961, 0.25490198, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_2f3dj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yq6so"]
+albedo_color = Color(0.654902, 0.72156864, 0.68235296, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_fv21b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tel4y"]
+albedo_color = Color(1, 0.96862745, 0.9137255, 1)
+roughness = 0.72
+
+[sub_resource type="SphereMesh" id="SphereMesh_qkpxi"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5q0nq"]
+albedo_color = Color(0.9607843, 0.7490196, 0.58431375, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_dgi5k"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j8jky"]
+albedo_color = Color(0.44705883, 0.3372549, 0.25490198, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_kmb1v"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_fuf3a"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pibwh"]
+albedo_color = Color(0.8980392, 0.54901963, 0.627451, 1)
+roughness = 0.72
+
+[sub_resource type="SphereMesh" id="SphereMesh_c6pm6"]
+radius = 0.36
+height = 0.48
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5he1u"]
+top_radius = 0.29
+bottom_radius = 0.29
+height = 0.025
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5poiv"]
+albedo_color = Color(0.6862745, 0.47058824, 0.29803923, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_2cjbq"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chjal"]
+albedo_color = Color(0.7647059, 0.58431375, 0.3764706, 1)
+roughness = 0.72
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cjqg0"]
+top_radius = 0.1
+bottom_radius = 0.1
+height = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vchkt"]
+vertex_color_use_as_albedo = true
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_txyw0"]
+size = Vector3(0.055, 0.015, 0.11)
+
+[sub_resource type="Curve" id="Curve_vc5cj"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.75, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Gradient" id="Gradient_nvyfr"]
+interpolation_mode = 1
+offsets = PackedFloat32Array(0, 0.25, 0.5, 0.75)
+colors = PackedColorArray(0.8980392, 0.54901963, 0.627451, 1, 0.6627451, 0.6039216, 0.79607844, 1, 0.9137255, 0.7411765, 0.36862746, 1, 0.5529412, 0.7372549, 0.627451, 1)
+
 [node name="LittleDonut" type="Node3D"]
-script = ExtResource("1")
+script = ExtResource("1_o6xl0")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_a8y0u")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.90630776, 0.34618863, -0.24240388, 0, 0.57357645, 0.81915206, 0.42261827, -0.74240386, 0.5198368, 0, 0, 0)
+light_color = Color(1, 0.9411765, 0.85490197, 1)
+light_energy = 0.45
+shadow_enabled = true
+directional_shadow_mode = 0
+directional_shadow_max_distance = 22.0
+
+[node name="Fill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 4)
+light_color = Color(1, 0.9098039, 0.8666667, 1)
+light_energy = 0.05
+omni_range = 12.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.88714343, 0.4614938, 0, -0.4614938, 0.88714343, 0, 7.1, 10.2)
+projection = 1
+current = true
+size = 9.8
+
+[node name="Shop" type="Node3D" parent="." instance=ExtResource("2_tipki")]
+
+[node name="Bear" type="Node3D" parent="." instance=ExtResource("3_85g3d")]
+unique_name_in_owner = true
+transform = Transform3D(0.9838437, 0, 0.17902958, 0, 1, 0, -0.17902958, 0, 0.9838437, -2.75, 0.8, -1.35)
+
+[node name="Bunny" type="Node3D" parent="." instance=ExtResource("4_choun")]
+unique_name_in_owner = true
+transform = Transform3D(0.9838437, 0, -0.17902958, 0, 1, 0, 0.17902958, 0, 0.9838437, 2.8, 0.8, -1.45)
+
+[node name="Sign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.84, -3.88)
+pixel_size = 0.0048
+modulate = Color(0.25882354, 0.4745098, 0.3882353, 1)
+text = "little donut"
+font_size = 80
+outline_size = 0
+
+[node name="SignSub" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.35, -3.87)
+pixel_size = 0.004
+modulate = Color(0.32941177, 0.24705882, 0.20784314, 1)
+text = "MADE WITH A LITTLE LOVE"
+font_size = 30
+outline_size = 0
+
+[node name="Board" type="MeshInstance3D" parent="."]
+transform = Transform3D(4.45, 0, 0, 0, 0.06, 0, 0, 0, 4.45, 0, 0.83, 1.7)
+material_override = SubResource("StandardMaterial3D_jkv2x")
+mesh = SubResource("CylinderMesh_jbj1t")
+
+[node name="Plate" type="MeshInstance3D" parent="."]
+transform = Transform3D(4.16, 0, 0, 0, 0.05, 0, 0, 0, 4.16, 0, 0.875, 1.7)
+material_override = SubResource("StandardMaterial3D_muem4")
+mesh = SubResource("CylinderMesh_dp3eg")
+
+[node name="Dough" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(3.9, 0, 0, 0, 0.23, 0, 0, 0, 3.9, 0, 1.02, 1.7)
+material_override = SubResource("StandardMaterial3D_0ld40")
+mesh = SubResource("CylinderMesh_gqmmt")
+
+[node name="Cutter" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, 2, 1.7)
+
+[node name="OuterBottom" type="MeshInstance3D" parent="Cutter"]
+material_override = SubResource("StandardMaterial3D_yc10j")
+mesh = SubResource("TorusMesh_jscy8")
+
+[node name="OuterTop" type="MeshInstance3D" parent="Cutter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+material_override = SubResource("StandardMaterial3D_yc10j")
+mesh = SubResource("TorusMesh_jscy8")
+
+[node name="InnerBottom" type="MeshInstance3D" parent="Cutter"]
+material_override = SubResource("StandardMaterial3D_yc10j")
+mesh = SubResource("TorusMesh_pm3ni")
+
+[node name="InnerTop" type="MeshInstance3D" parent="Cutter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+material_override = SubResource("StandardMaterial3D_yc10j")
+mesh = SubResource("TorusMesh_pm3ni")
+
+[node name="Bar" type="MeshInstance3D" parent="Cutter"]
+transform = Transform3D(2.7, 0, 0, 0, 0.06, 0, 0, 0, 0.06, 0, 0.17, 0)
+material_override = SubResource("StandardMaterial3D_yc10j")
+mesh = SubResource("BoxMesh_y6deb")
+
+[node name="Oven" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -0.1)
+visible = false
+
+[node name="Body" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(3.7, 0, 0, 0, 1.65, 0, 0, 0, 1.65, 0, 0.83, 0)
+material_override = SubResource("StandardMaterial3D_og1vs")
+mesh = SubResource("BoxMesh_2wyq8")
+
+[node name="Window" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(3.22, 0, 0, 0, 1.15, 0, 0, 0, 0.1, 0, 0.75, 0.85)
+material_override = SubResource("StandardMaterial3D_vxglm")
+mesh = SubResource("BoxMesh_2f3dj")
+
+[node name="Shelf" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(2.9, 0, 0, 0, 0.09, 0, 0, 0, 1.5, 0, 0.38, 0.98)
+material_override = SubResource("StandardMaterial3D_yq6so")
+mesh = SubResource("BoxMesh_fv21b")
+
+[node name="Knob1" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.47, 0.89)
+material_override = SubResource("StandardMaterial3D_tel4y")
+mesh = SubResource("SphereMesh_qkpxi")
+
+[node name="Knob2" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.47, 0.89)
+material_override = SubResource("StandardMaterial3D_tel4y")
+mesh = SubResource("SphereMesh_qkpxi")
+
+[node name="Knob3" type="MeshInstance3D" parent="Oven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.47, 0.89)
+material_override = SubResource("StandardMaterial3D_tel4y")
+mesh = SubResource("SphereMesh_qkpxi")
+
+[node name="Door" type="Node3D" parent="Oven"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.21814328, -0.97591674, 0, 0.97591674, 0.21814328, 0, 0.18, 0.91)
+
+[node name="Panel" type="MeshInstance3D" parent="Oven/Door"]
+transform = Transform3D(3.25, 0, 0, 0, 1.15, 0, 0, 0, 0.12, 0, 0.54, 0)
+material_override = SubResource("StandardMaterial3D_5q0nq")
+mesh = SubResource("BoxMesh_dgi5k")
+
+[node name="Glass" type="MeshInstance3D" parent="Oven/Door"]
+transform = Transform3D(2.76, 0, 0, 0, 0.72, 0, 0, 0, 0.03, 0, 0.53, 0.08)
+material_override = SubResource("StandardMaterial3D_j8jky")
+mesh = SubResource("BoxMesh_kmb1v")
+
+[node name="Handle" type="MeshInstance3D" parent="Oven/Door"]
+transform = Transform3D(2.16, 0, 0, 0, 0.09, 0, 0, 0, 0.16, 0, 0.94, 0.17)
+material_override = SubResource("StandardMaterial3D_tel4y")
+mesh = SubResource("BoxMesh_fuf3a")
+
+[node name="Badge" type="Label3D" parent="Oven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.91, 0.86)
+pixel_size = 0.009
+modulate = Color(0.32941177, 0.24705882, 0.20784314, 1)
+text = "PIP'S OVEN"
+font_size = 24
+outline_size = 0
+
+[node name="Bowl" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 1.61, -0.9)
+material_override = SubResource("StandardMaterial3D_pibwh")
+mesh = SubResource("SphereMesh_c6pm6")
+
+[node name="Cream" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 1.82, -0.9)
+material_override = SubResource("StandardMaterial3D_tel4y")
+mesh = SubResource("CylinderMesh_5he1u")
+
+[node name="Spoon" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 1.82, -0.9)
+
+[node name="Handle" type="MeshInstance3D" parent="Spoon"]
+transform = Transform3D(0.055, 0, 0, 0, 0.65, 0, 0, 0, 0.055, 0, 0.23, 0)
+material_override = SubResource("StandardMaterial3D_5poiv")
+mesh = SubResource("BoxMesh_2cjbq")
+
+[node name="RollingPin" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -2.75, 1.56, -0.82)
+material_override = SubResource("StandardMaterial3D_chjal")
+mesh = SubResource("CylinderMesh_cjqg0")
+
+[node name="ConfettiSmall" type="CPUParticles3D" parent="."]
+unique_name_in_owner = true
+material_override = SubResource("StandardMaterial3D_vchkt")
+cast_shadow = 0
+emitting = false
+amount = 12
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+lifetime_randomness = 0.5
+mesh = SubResource("BoxMesh_txyw0")
+direction = Vector3(0, 1, 0)
+spread = 60.0
+gravity = Vector3(0, -3, 0)
+initial_velocity_min = 2.5
+initial_velocity_max = 4.5
+angular_velocity_min = -200.0
+angular_velocity_max = 200.0
+scale_amount_curve = SubResource("Curve_vc5cj")
+color_initial_ramp = SubResource("Gradient_nvyfr")
+
+[node name="ConfettiBig" type="CPUParticles3D" parent="."]
+unique_name_in_owner = true
+material_override = SubResource("StandardMaterial3D_vchkt")
+cast_shadow = 0
+emitting = false
+amount = 50
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+lifetime_randomness = 0.5
+mesh = SubResource("BoxMesh_txyw0")
+direction = Vector3(0, 1, 0)
+spread = 60.0
+gravity = Vector3(0, -3, 0)
+initial_velocity_min = 2.5
+initial_velocity_max = 4.5
+angular_velocity_min = -200.0
+angular_velocity_max = 200.0
+scale_amount_curve = SubResource("Curve_vc5cj")
+color_initial_ramp = SubResource("Gradient_nvyfr")
+
+[node name="Audio" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="Donut" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, 1.35, 1.7)
+visible = false
+script = ExtResource("5_ya4ey")
+
+[node name="HudLayer" type="CanvasLayer" parent="."]
+
+[node name="Hud" parent="HudLayer" instance=ExtResource("6_eb6dy")]
+unique_name_in_owner = true
+
+[node name="LicenseDialog" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+title = "Little Donut — Licenses"
+size = Vector2i(1000, 600)
+exclusive = true
+ok_button_text = "Close"
+
+[node name="Tabs" type="TabContainer" parent="LicenseDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Little Donut (AGPL)" type="RichTextLabel" parent="LicenseDialog/Tabs"]
+layout_mode = 2
+selection_enabled = true
+
+[node name="Godot and third parties" type="RichTextLabel" parent="LicenseDialog/Tabs"]
+layout_mode = 2
+selection_enabled = true

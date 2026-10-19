@@ -1,3 +1,4 @@
+class_name Donut
 extends Node3D
 ## Procedural donut. Torus meshes are built once and shared, frosting is painted on the CPU
 ## with Image.blend_rect and uploaded at most once per frame, and toppings are three
@@ -15,10 +16,14 @@ const GROW_TIME := 0.18
 const BREAD_RAW := Color("efc485")
 const BREAD_BAKED := Color("bf783b")
 const TOPPING_KINDS := ["sprinkles", "stars", "pearls"]
-const SPRINKLE_COLORS := [Color("f2c957"), Color("f3eddb"), Color("dd6c90"), Color("83baa6"), Color("9f89c4")]
+const SPRINKLE_COLORS := [
+	Color("f2c957"), Color("f3eddb"), Color("dd6c90"), Color("83baa6"), Color("9f89c4")
+]
 const PEARL_COLOR := Color("fff1ca")
 const STAR_COLOR := Color("f5ce64")
-const QUAD_CORNERS := [Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 0), Vector2i(1, 1), Vector2i(0, 1)]
+const QUAD_CORNERS := [
+	Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 0), Vector2i(1, 1), Vector2i(0, 1)
+]
 
 static var bread_mesh: ArrayMesh
 static var frosting_mesh: ArrayMesh
@@ -97,7 +102,9 @@ func _process(delta: float) -> void:
 	for i in range(growing.size() - 1, -1, -1):
 		var g: Dictionary = growing[i]
 		g.t += delta
-		var s: float = Tween.interpolate_value(.05, .95, minf(g.t, GROW_TIME), GROW_TIME, Tween.TRANS_BACK, Tween.EASE_OUT)
+		var s: float = Tween.interpolate_value(
+			.05, .95, minf(g.t, GROW_TIME), GROW_TIME, Tween.TRANS_BACK, Tween.EASE_OUT
+		)
 		_set_topping_transform(g.kind, g.index, g.basis, g.origin, s)
 		if g.t >= GROW_TIME:
 			growing.remove_at(i)
@@ -195,15 +202,21 @@ func set_warm_up(enabled: bool) -> void:
 	for kind in TOPPING_KINDS:
 		var mm: MultiMesh = multimeshes[kind].multimesh
 		if enabled:
-			mm.set_instance_transform(0, Transform3D(Basis().scaled(Vector3.ONE * .01), Vector3.ZERO))
+			mm.set_instance_transform(
+				0, Transform3D(Basis().scaled(Vector3.ONE * .01), Vector3.ZERO)
+			)
 			mm.set_instance_color(0, Color.WHITE)
 			mm.visible_instance_count = 1
 		else:
 			mm.visible_instance_count = 0
 
 
-func _set_topping_transform(kind: String, index: int, basis: Basis, origin: Vector3, s: float) -> void:
-	multimeshes[kind].multimesh.set_instance_transform(index, Transform3D(basis.scaled(Vector3.ONE * s), origin))
+func _set_topping_transform(
+	kind: String, index: int, basis: Basis, origin: Vector3, s: float
+) -> void:
+	multimeshes[kind].multimesh.set_instance_transform(
+		index, Transform3D(basis.scaled(Vector3.ONE * s), origin)
+	)
 
 
 func _build_coverage_grid() -> void:
@@ -245,8 +258,14 @@ static func _torus(top: bool) -> ArrayMesh:
 				var u: float = (i + corner.x) * TAU / rings
 				var v: float = (j + corner.y) * (PI if top else TAU) / sides
 				var rad: float = R + (TUBE + (.014 if top else 0)) * cos(v)
-				var point := Vector3(rad * cos(u), (HEIGHT + (.015 if top else 0)) * sin(v) + (.008 if top else 0), rad * sin(u))
-				st.set_normal(Vector3(cos(u) * cos(v), sin(v) * TUBE / HEIGHT, sin(u) * cos(v)).normalized())
+				var point := Vector3(
+					rad * cos(u),
+					(HEIGHT + (.015 if top else 0)) * sin(v) + (.008 if top else 0),
+					rad * sin(u)
+				)
+				st.set_normal(
+					Vector3(cos(u) * cos(v), sin(v) * TUBE / HEIGHT, sin(u) * cos(v)).normalized()
+				)
 				st.set_uv(Vector2(point.x, point.z) / EXTENT * .5 + Vector2.ONE * .5)
 				st.add_vertex(point)
 	st.index()

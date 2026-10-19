@@ -34,14 +34,18 @@ Import `project.godot` into Godot **4.5.2** (standard/GDScript edition), then pr
 
 | Location | Purpose |
 | --- | --- |
-| `scripts/game.gd` | Recipe state machine, touch/mouse input, helpers, shop camera, UI, sounds |
-| `scripts/donut.gd` | Procedural torus, paintable frosting texture, bounded topping geometry |
+| `scenes/main.tscn` | Entry scene: shop, lights, camera, oven, helpers, confetti, donut, HUD |
+| `scenes/hud.tscn`, `scripts/hud.gd` | Anchored HUD built from containers; reports taps and jar drags |
+| `scenes/tool_button.tscn` | Illustrated tool button instanced into the HUD's tool row |
+| `scripts/game.gd` | Recipe state machine, workbench gestures, baking, sounds |
+| `scripts/donut.gd` | Shared torus meshes, paintable frosting texture, MultiMesh toppings |
 | `scripts/toy_icon.gd` | Original vector illustrations for the touch tools |
-| `scenes/main.tscn` | Entry scene |
 | `assets/*.glb` | Original Blender shop, bear, and bunny meshes |
 | `art/*.blend` | Editable Blender source for the three assets |
 | `tools/create_assets.py` | Reproducible Blender modeling and GLB export script |
 | `tests/input_test.gd` | Godot viewport touch/mouse event integration test |
+| `tests/smoke_test.gd` | Recipe transition and topping-bound checks |
+| `tests/visual_test.gd` | Renders stage previews into `builds/previews` (needs a display) |
 | `export_presets.cfg` | Android and Linux export presets |
 
 To rebuild the art with Blender 5.2:
@@ -75,12 +79,16 @@ tools/run.sh --headless --export-release Linux builds/little-donut-linux.x86_64
 ```sh
 tools/test.sh
 # With a graphical display, capture each stage into builds/previews:
-tools/run.sh -- --visual-test
+tools/run.sh --script tests/visual_test.gd
+# Or a single decorated donut:
+tools/run.sh --script tests/visual_test.gd -- --showcase
 ```
+
+GDScript is formatted with [gdtoolkit](https://github.com/Scony/godot-gdscript-toolkit): `gdformat scripts tests tools`.
 
 Tests cover the complete recipe, touch and mouse input, donut-to-oven dragging, continuous frosting strokes, color changes, extra-finger handling, jar dragging, rejecting toppings in the hole, the 220-topping cap, serving, and replay. The scene was also rendered and reviewed using Mesa software OpenGL on Linux.
 
-This is a playable first prototype: one donut shape, one shop, an oven, four frostings, and three topping types. Helpers have simple procedural work/idle animations. Frosting and the current donut are held in memory; mute preference and completed-donut count are saved locally. There is no gallery or resume-after-app-termination yet. Toppings stop accumulating at 220 to bound mobile rendering cost. The UI uses a fixed landscape design with aspect-preserving scaling and may show side bars on wide phones.
+This is a playable first prototype: one donut shape, one shop, an oven, four frostings, and three topping types. Helpers have simple procedural work/idle animations. Frosting and the current donut are held in memory; mute preference and completed-donut count are saved locally. There is no gallery or resume-after-app-termination yet. Toppings stop accumulating at 220 to bound mobile rendering cost. The UI is designed at 1280×800 and anchored to the screen edges; wider phones see more of the shop instead of side bars.
 
 ## License
 
