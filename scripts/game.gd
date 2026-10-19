@@ -9,6 +9,10 @@ const GREEN := Color("427963")
 const PINK := Color("e58ca0")
 const DONUT_POS := Vector3(0,1.35,1.7)
 const DONUT_SCALE := Vector3(1.3,1.3,1.3)
+const NO_POINTER := -999
+const MOUSE_POINTER := -1
+## Screen region (design pixels) where touches reach the 3D workbench instead of the HUD.
+const PLAY_AREA := Rect2(267,195,1013,435)
 var stage:Stage=Stage.CUT
 var camera:Camera3D
 var donut:Node3D
@@ -36,7 +40,7 @@ var tool_buttons:Array[Button]=[]
 var selected_tool:=0
 var frosting_colors:=[Color("e68ca4"),Color("744331"),Color("f7e6bd"),Color("ae9bd1")]
 var topping_kinds:=["sprinkles","stars","pearls"]
-var pointer_id:=-999
+var pointer_id:=NO_POINTER
 var painting:=false
 var dragging_jar:=false
 var last_paint:=Vector2(INF,INF)
@@ -149,7 +153,7 @@ func _build_ui() -> void:
 	celebration=_label("",34,GREEN);celebration.position=Vector2(385,560);celebration.size=Vector2(520,58);celebration.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;ui.add_child(celebration)
 
 func _show_licenses() -> void:
-	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false
+	_cancel_pointer()
 	if not is_instance_valid(license_dialog):
 		license_dialog=AcceptDialog.new()
 		license_dialog.title="Little Donut — Licenses"
@@ -171,7 +175,7 @@ func _show_licenses() -> void:
 	license_dialog.popup_centered(Vector2i(1000,600))
 
 func _reset_recipe() -> void:
-	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false;transitioning=false;cut_done=false
+	pointer_id=NO_POINTER;painting=false;dragging_jar=false;cursor.visible=false;transitioning=false;cut_done=false
 	if is_instance_valid(donut):
 		remove_child(donut);donut.queue_free()
 	donut=Donut.new();add_child(donut);donut.position=DONUT_POS;donut.scale=DONUT_SCALE;donut.visible=false
@@ -182,7 +186,7 @@ func _reset_recipe() -> void:
 
 func _set_stage(value:Stage) -> void:
 	stage=value;selected_tool=0;last_paint=Vector2(INF,INF)
-	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false
+	pointer_id=NO_POINTER;painting=false;dragging_jar=false;cursor.visible=false
 	for b in tool_row.get_children():tool_row.remove_child(b);b.queue_free()
 	tool_buttons.clear()
 	var active_step:=0
@@ -223,14 +227,19 @@ func _set_stage(value:Stage) -> void:
 func _tool(text:String,kind:String,color:Color,index:int) -> void:
 	var b:=Button.new();b.custom_minimum_size=Vector2(174,86);b.focus_mode=Control.FOCUS_NONE
 	b.add_theme_stylebox_override("normal",_style(Color("f2eadc"),17));b.add_theme_stylebox_override("hover",_style(Color("e5e8d7"),17));b.add_theme_stylebox_override("pressed",_style(Color("d7e8d9"),17))
-	b.pressed.connect(func():_select_tool(index))
 	tool_row.add_child(b);tool_buttons.append(b)
 	var ic:=Icon.new();ic.kind=kind;ic.tint=color;ic.position=Vector2(9,6);ic.size=Vector2(65,65);b.add_child(ic)
 	var l:=_label(text,16,INK);l.position=Vector2(77,17);l.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;l.size=Vector2(92,58);l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;b.add_child(l)
 
+func _tool_pressed(index:int) -> void:
+	# A tapped tool should do its job, not only highlight itself.
+	match stage:
+		Stage.CUT:_cut()
+		Stage.LOAD:_start_bake()
+		Stage.TOP when index==3:donut.clear_toppings();_chime(440)
+		_:_select_tool(index)
+
 func _select_tool(index:int) -> void:
-	if stage==Stage.TOP and index==3:
-		donut.clear_toppings();_chime(440);return
 	selected_tool=index
 	for i in range(tool_buttons.size()):
 		var style:=_style(Color("e0ecd9") if i==index else Color("f2eadc"),17)
@@ -243,26 +252,28 @@ func _select_tool(index:int) -> void:
 func _input(event:InputEvent) -> void:
 	if is_instance_valid(license_dialog) and license_dialog.visible:return
 	if event is InputEventScreenTouch:
-		if event.pressed and pointer_id==-999:_pointer_down(event.position,event.index)
+		if event.canceled:
+			if event.index==pointer_id:_cancel_pointer()
+		elif event.pressed and pointer_id==NO_POINTER:_pointer_down(event.position,event.index)
 		elif not event.pressed and event.index==pointer_id:_pointer_up(event.position)
 	elif event is InputEventScreenDrag and event.index==pointer_id:_pointer_move(event.position)
-	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.device!=-1:
-		if event.pressed and pointer_id==-999:_pointer_down(event.position,-1)
-		elif not event.pressed and pointer_id==-1:_pointer_up(event.position)
-	elif event is InputEventMouseMotion and pointer_id==-1:_pointer_move(event.position)
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.device!=InputEvent.DEVICE_ID_EMULATION:
+		if event.pressed and pointer_id==NO_POINTER:_pointer_down(event.position,MOUSE_POINTER)
+		elif not event.pressed and pointer_id==MOUSE_POINTER:_pointer_up(event.position)
+	elif event is InputEventMouseMotion and pointer_id==MOUSE_POINTER:_pointer_move(event.position)
 	elif event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
 		# Android Back must not discard a toddler's creation.
-		pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false
+		_cancel_pointer()
 
 func _pointer_down(pos:Vector2,id:int) -> void:
 	if transitioning:return
 	for i in range(tool_buttons.size()):
 		if tool_buttons[i].get_global_rect().has_point(pos):
-			_select_tool(i)
+			_tool_pressed(i)
 			if stage==Stage.TOP and i<3:
 				pointer_id=id;dragging_jar=true;cursor.visible=true;cursor.position=pos-Vector2(36,62);last_screen=pos
 			return
-	if pos.y<195 or pos.y>630 or pos.x<267:return
+	if not PLAY_AREA.has_point(pos):return
 	pointer_id=id;last_screen=pos
 	if stage==Stage.CUT and _near_donut(pos,1.9):_cut()
 	elif stage==Stage.LOAD and _near_donut(pos,2):painting=true
@@ -286,7 +297,13 @@ func _pointer_up(pos:Vector2) -> void:
 		if donut.position.z<.9:_start_bake()
 		else:create_tween().tween_property(donut,"position",DONUT_POS,.25)
 	elif dragging_jar:_apply_at(pos)
-	pointer_id=-999;painting=false;dragging_jar=false;cursor.visible=false;last_paint=Vector2(INF,INF)
+	_cancel_pointer()
+
+func _cancel_pointer() -> void:
+	# Drop the gesture without applying it: used for canceled touches, focus loss, Back and dialogs.
+	if stage==Stage.LOAD and painting and not transitioning:create_tween().tween_property(donut,"position",DONUT_POS,.25)
+	pointer_id=NO_POINTER;painting=false;dragging_jar=false;last_paint=Vector2(INF,INF)
+	if is_instance_valid(cursor):cursor.visible=false
 
 func _plane_point(pos:Vector2,height:float) -> Vector3:
 	var origin:=camera.project_ray_origin(pos)
@@ -317,7 +334,7 @@ func _near_donut(pos:Vector2,radius:float) -> bool:
 	return Vector2(p.x,p.z).length()<radius
 
 func _apply_at(pos:Vector2) -> void:
-	if pos.y<190 or pos.y>630 or pos.x<267:return
+	if not PLAY_AREA.has_point(pos):return
 	var p:=_local_hit(pos)
 	if stage==Stage.FROST:
 		if p.distance_to(last_paint)<.045:return
@@ -367,23 +384,20 @@ func _next() -> void:
 
 func _process(delta:float) -> void:
 	elapsed+=delta;sound_cooldown-=delta
-	if is_instance_valid(bear):
-		bear.position.y=.8+sin(elapsed*1.8)*.035
-		bear.rotation.z=sin(elapsed*1.3)*.025
-		bunny.position.y=.8+sin(elapsed*2.1+1)*.045
-		bunny.rotation.z=sin(elapsed*1.6)*.03
-		if is_instance_valid(bear_paw):bear_paw.rotation.z=sin(elapsed*3.2)*.27
-		if is_instance_valid(bunny_paw):bunny_paw.rotation.x=sin(elapsed*3)*.35
-		if is_instance_valid(spoon):spoon.rotation=Vector3(sin(elapsed*3)*.2,0,cos(elapsed*3)*.2)
+	bear.position.y=.8+sin(elapsed*1.8)*.035
+	bear.rotation.z=sin(elapsed*1.3)*.025
+	bunny.position.y=.8+sin(elapsed*2.1+1)*.045
+	bunny.rotation.z=sin(elapsed*1.6)*.03
+	if bear_paw:bear_paw.rotation.z=sin(elapsed*3.2)*.27
+	if bunny_paw:bunny_paw.rotation.x=sin(elapsed*3)*.35
+	spoon.rotation=Vector3(sin(elapsed*3)*.2,0,cos(elapsed*3)*.2)
 	if stage==Stage.BAKING and not transitioning:
 		bake_time+=delta;progress.value=bake_time/4*100
 		if bake_time>=4:_finish_bake()
 	if stage==Stage.SERVE:donut.rotation.y+=delta*.16
-	if is_instance_valid(hint):
-		hint.visible=pointer_id==-999 and stage in [Stage.CUT,Stage.FROST,Stage.TOP] and not transitioning
-		var target:=DONUT_POS+Vector3(.8,.5,0)
-		hint.position=camera.unproject_position(target)+Vector2(sin(elapsed*2)*18,cos(elapsed*2)*10)
-		hint.modulate.a=.65+sin(elapsed*3)*.2
+	hint.visible=pointer_id==NO_POINTER and stage in [Stage.CUT,Stage.FROST,Stage.TOP] and not transitioning
+	hint.position=camera.unproject_position(DONUT_POS+Vector3(.8,.5,0))+Vector2(sin(elapsed*2)*18,cos(elapsed*2)*10)
+	hint.modulate.a=.65+sin(elapsed*3)*.2
 	for i in range(confetti.size()-1,-1,-1):
 		var f:Dictionary=confetti[i];f.life-=delta
 		f.node.position+=f.velocity*delta;f.velocity.y-=delta*3
@@ -422,9 +436,7 @@ func _save_settings() -> void:
 	var config:=ConfigFile.new();config.set_value("bakery","sound",sound_on);config.set_value("bakery","completed",completed);config.save("user://bakery.cfg")
 
 func _notification(what:int) -> void:
-	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_WM_GO_BACK_REQUEST]:
-		pointer_id=-999;painting=false;dragging_jar=false
-		if is_instance_valid(cursor):cursor.visible=false
+	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_WM_GO_BACK_REQUEST]:_cancel_pointer()
 
 func _material(col:Color) -> StandardMaterial3D:
 	var m:=StandardMaterial3D.new();m.albedo_color=col;m.roughness=.72;return m
@@ -460,7 +472,7 @@ func _run_smoke_test() -> void:
 	var screen:=camera.unproject_position(DONUT_POS+Vector3(.88,.37,0))
 	_pointer_down(screen,3);_pointer_move(screen+Vector2(15,8));_pointer_up(screen)
 	assert(donut.painted_pixels>0,"Touch must paint frosting")
-	assert(pointer_id==-999,"Pointer must reset on release")
+	assert(pointer_id==NO_POINTER,"Pointer must reset on release")
 	var before:int=donut.painted_pixels
 	_apply_at(Vector2(10,10));assert(donut.painted_pixels==before,"HUD must not paint")
 	_next();assert(stage==Stage.TOP)
@@ -469,7 +481,7 @@ func _run_smoke_test() -> void:
 	assert(not donut.add_topping(Vector2.ZERO,"stars"),"Hole must reject toppings")
 	for i in range(250):donut.add_topping(Vector2(.88,0),"pearls")
 	assert(donut.topping_count==Donut.MAX_TOPPINGS,"Toppings must be bounded")
-	_select_tool(3);assert(donut.topping_count==0)
+	_tool_pressed(3);assert(donut.topping_count==0)
 	_next();assert(stage==Stage.SERVE)
 	_next();assert(stage==Stage.CUT and donut.painted_pixels==0 and donut.topping_count==0)
 	print("SMOKE TEST PASS: cut, bake, touch frosting, toppings, limits, serve, replay")

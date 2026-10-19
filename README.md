@@ -14,15 +14,15 @@ The camera stays at the workbench. There are no movement controls, orders to rem
 
 ## Install on Android
 
-The built package is `builds/little-donut-android.apk` (a debug-signed prototype for sideloading).
+Build the APK with `tools/build_android.sh` (see [Android build setup](#android-build-setup)). It is written to `builds/little-donut-android.apk` as a debug-signed prototype for sideloading; the `builds/` folder is not committed.
 
 - Copy the APK to your Android phone/tablet and open it from Files.
 - If Android asks, allow that file manager to install this app.
 - Open **Little Donut** and turn the device sideways.
 
-The package targets ARM64 and ARMv7 devices, Android 7.0/API 24 or newer, using Godot's OpenGL compatibility renderer. It requests no Android permissions. It is not a Play Store release. The APK was exported and its signature/package checked here; performance and touch behavior on your particular physical Android device still need testing.
+The package targets ARM64 and ARMv7 devices, Android 7.0/API 24 or newer, using Godot's OpenGL compatibility renderer. It requests no Android permissions. It is not a Play Store release. Performance and touch behavior on your particular physical Android device still need testing.
 
-A Linux executable is also provided at `builds/little-donut-linux.x86_64`. Double-click it, or launch it from a terminal. If your graphics driver has trouble, run `LIBGL_ALWAYS_SOFTWARE=1 builds/little-donut-linux.x86_64`.
+A Linux executable can be exported to `builds/little-donut-linux.x86_64` (see below). Double-click it, or launch it from a terminal. If your graphics driver has trouble, run `LIBGL_ALWAYS_SOFTWARE=1 builds/little-donut-linux.x86_64`.
 
 ## Open and edit
 

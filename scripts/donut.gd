@@ -14,7 +14,6 @@ var paint_texture:ImageTexture
 var painted_pixels := 0
 var topping_count := 0
 var rng := RandomNumberGenerator.new()
-var frosting_material:StandardMaterial3D
 
 func _ready() -> void:
 	rng.randomize()
@@ -30,7 +29,7 @@ func _ready() -> void:
 	paint_texture=ImageTexture.create_from_image(paint_image)
 	frosting=MeshInstance3D.new()
 	frosting.mesh=_torus(true)
-	frosting_material=StandardMaterial3D.new()
+	var frosting_material:=StandardMaterial3D.new()
 	frosting_material.albedo_texture=paint_texture
 	frosting_material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	frosting_material.alpha_scissor_threshold=.2

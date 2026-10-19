@@ -19,6 +19,10 @@ func drag(pos:Vector2,index:=0) -> void:
 	var e:=InputEventScreenDrag.new();e.position=pos;e.index=index
 	root.push_input(e,true)
 
+func cancel(pos:Vector2,index:=0) -> void:
+	var e:=InputEventScreenTouch.new();e.position=pos;e.pressed=false;e.canceled=true;e.index=index
+	root.push_input(e,true)
+
 func run() -> void:
 	root.size=Vector2i(1280,800)
 	root.content_scale_size=Vector2i(1280,800)
@@ -29,9 +33,15 @@ func run() -> void:
 	touch(center,true);touch(center,false)
 	await create_timer(1).timeout
 	check(game.stage==game.Stage.LOAD,"Touching cutter must cut the dough")
-	# Pull the donut toward the oven and release.
+	# A touch the OS cancels (system gesture) must drop the donut back, not bake it.
 	touch(center,true)
 	var oven_target:Vector2=game.camera.unproject_position(Vector3(0,1.25,.1))
+	drag(oven_target);cancel(oven_target)
+	check(game.stage==game.Stage.LOAD and game.pointer_id==game.NO_POINTER,"Canceled touch must not start the bake")
+	await create_timer(.4).timeout
+	check(game.donut.position.is_equal_approx(game.DONUT_POS),"Canceled drag must return the donut")
+	# Pull the donut toward the oven and release.
+	touch(center,true)
 	drag(oven_target);touch(oven_target,false)
 	await create_timer(6).timeout
 	check(game.stage==game.Stage.FROST,"Dragging to oven must complete a bake")
@@ -55,7 +65,7 @@ func run() -> void:
 	check(game.pointer_id==2,"Extra fingers must not interrupt the stroke")
 	drag(spot+Vector2(22,12),2);touch(spot+Vector2(22,12),false,2)
 	check(game.donut.painted_pixels>50,"Screen drag must paint the 3D frosting")
-	check(game.pointer_id==-999,"Touch release must clear gesture state")
+	check(game.pointer_id==game.NO_POINTER,"Touch release must clear gesture state")
 	var before:PackedByteArray=game.donut.paint_image.get_data()
 	game._select_tool(1)
 	touch(spot,true,0);touch(spot,false,0)
@@ -63,7 +73,7 @@ func run() -> void:
 	# Mouse goes through the same input pipeline, for desktop play.
 	var mouse:=InputEventMouseButton.new();mouse.button_index=MOUSE_BUTTON_LEFT;mouse.position=spot+Vector2(-25,0);mouse.pressed=true
 	root.push_input(mouse,true);mouse=mouse.duplicate();mouse.pressed=false;root.push_input(mouse,true)
-	check(game.pointer_id==-999,"Mouse release must clear gesture state")
+	check(game.pointer_id==game.NO_POINTER,"Mouse release must clear gesture state")
 	game._next();await process_frame
 	if game.stage!=game.Stage.TOP:
 		quit(1);return
@@ -79,5 +89,14 @@ func run() -> void:
 	check(not game.donut.add_topping(Vector2.ZERO,"stars"),"Donut hole must stay empty")
 	game._next();check(game.stage==game.Stage.SERVE,"Decorated donut must serve")
 	game._next();check(game.stage==game.Stage.CUT and game.donut.topping_count==0,"Replay must clear last creation")
-	print("INPUT TEST: %s" % ("PASS — cutter, oven drag, frosting, mixed colors, mouse, multi-touch, jar drag, replay" if failures==0 else "FAIL (%d)" % failures))
+	# The illustrated tool buttons act, instead of only highlighting themselves.
+	var cutter_tool:Vector2=game.tool_buttons[0].get_global_rect().get_center()
+	touch(cutter_tool,true);touch(cutter_tool,false)
+	await create_timer(1).timeout
+	check(game.stage==game.Stage.LOAD,"Tapping the cutter tool must cut the dough")
+	var oven_tool:Vector2=game.tool_buttons[0].get_global_rect().get_center()
+	touch(oven_tool,true);touch(oven_tool,false)
+	await create_timer(1).timeout
+	check(game.stage==game.Stage.BAKING,"Tapping the oven tool must start the bake")
+	print("INPUT TEST: %s" % ("PASS — cutter, cancel, oven drag, frosting, mixed colors, mouse, multi-touch, jar drag, replay, tool buttons" if failures==0 else "FAIL (%d)" % failures))
 	quit(0 if failures==0 else 1)
