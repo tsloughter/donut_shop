@@ -1,11 +1,16 @@
 """Rebuild the original Little Donut art in Blender and export it for Godot.
 
+This script is the source of truth for the art. It writes assets/*.glb for the game and
+art/*.blend for inspection in Blender; the .blend files are generated outputs and are not
+committed. Running it twice produces identical files.
+
 Geometry is generated with bmesh in Godot's Y-up coordinates and converted to Blender's Z-up
 once, when it is written. Static parts are merged into one mesh per material so the shop and
 each helper cost a handful of draw calls on a phone; only animated parts stay separate.
 
 Run:  blender --background --factory-startup --python tools/create_assets.py
 """
+
 import math
 import os
 
@@ -87,7 +92,9 @@ class Group:
         pivot = to_blender(origin)
         for material, bm in self.meshes.items():
             bm.transform(Matrix.Translation(-pivot))
-            mesh = bpy.data.meshes.new(self.name if len(self.meshes) == 1 else f"{self.name} {material}")
+            mesh = bpy.data.meshes.new(
+                self.name if len(self.meshes) == 1 else f"{self.name} {material}"
+            )
             bm.to_mesh(mesh)
             bm.free()
             mesh.materials.append(MATERIALS[material])
@@ -202,7 +209,9 @@ def tube(group, points, radius, material, sides=8):
         ring = []
         for j in range(sides):
             angle = j * math.tau / sides
-            ring.append(bm.verts.new(center + (side * math.cos(angle) + up * math.sin(angle)) * radius))
+            ring.append(
+                bm.verts.new(center + (side * math.cos(angle) + up * math.sin(angle)) * radius)
+            )
         rings.append(ring)
     for a, b in zip(rings, rings[1:]):
         for j in range(sides):
@@ -228,8 +237,9 @@ def export(name, collection):
         export_format="GLB",
         use_selection=True,
         export_apply=True,
-        # Nothing is textured, so UVs would only pad every vertex.
+        # Nothing is textured or animated, so neither UVs nor animation tracks are exported.
         export_texcoords=False,
+        export_animations=False,
     )
 
 

@@ -2,6 +2,7 @@
 builds/*
 !builds/.gitkeep
 !builds/.gdignore
+art/*.blend
 *.blend1
 *.keystore
 .DS_Store
