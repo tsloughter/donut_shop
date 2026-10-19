@@ -64,7 +64,7 @@ func run() -> void:
 	touch(spot,false,7)
 	check(game.pointer_id==2,"Extra fingers must not interrupt the stroke")
 	drag(spot+Vector2(22,12),2);touch(spot+Vector2(22,12),false,2)
-	check(game.donut.painted_pixels>50,"Screen drag must paint the 3D frosting")
+	check(game.donut.painted_cells>0 and game.donut.dab_count>=2,"Screen drag must paint the 3D frosting")
 	check(game.pointer_id==game.NO_POINTER,"Touch release must clear gesture state")
 	var before:PackedByteArray=game.donut.paint_image.get_data()
 	game._select_tool(1)

@@ -53,8 +53,9 @@ var sound_on:=true
 var completed:=0
 var audio:AudioStreamPlayer
 var sound_cooldown:=0.0
-var sparkle_root:Node3D
-var confetti:Array[Dictionary]=[]
+var confetti_small:CPUParticles3D
+var confetti_big:CPUParticles3D
+var chime_cache:Dictionary={}
 var tool_panel:Panel
 var celebration:Label
 var smoke_test:=false
@@ -68,6 +69,7 @@ func _ready() -> void:
 	_build_ui()
 	_load_settings()
 	_reset_recipe()
+	_warm_up_shaders()
 	if "--showcase" in OS.get_cmdline_user_args():call_deferred("_showcase")
 	if smoke_test:call_deferred("_run_smoke_test")
 	if "--visual-test" in OS.get_cmdline_user_args():call_deferred("_visual_test")
@@ -87,7 +89,8 @@ func _build_world() -> void:
 	e.tonemap_mode=Environment.TONE_MAPPER_LINEAR
 	env.environment=e;add_child(env)
 	var sun:=DirectionalLight3D.new();sun.rotation_degrees=Vector3(-55,-25,0);sun.light_color=Color("fff0da");sun.light_energy=.45
-	sun.shadow_enabled=true;sun.directional_shadow_max_distance=22;add_child(sun)
+	# One fixed orthographic camera over a small room: a single orthogonal shadow map is enough.
+	sun.shadow_enabled=true;sun.directional_shadow_mode=DirectionalLight3D.SHADOW_ORTHOGONAL;sun.directional_shadow_max_distance=22;add_child(sun)
 	var fill:=OmniLight3D.new();fill.position=Vector3(0,4,4);fill.light_color=Color("ffe8dd");fill.light_energy=.05;fill.omni_range=12;add_child(fill)
 	camera=Camera3D.new();add_child(camera)
 	camera.position=Vector3(0,7.1,10.2);camera.look_at(Vector3(0,1.95,.3));camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=9.8;camera.current=true
@@ -104,7 +107,8 @@ func _build_world() -> void:
 		var ring2:=ring.duplicate();ring2.position.y=.15;cutter.add_child(ring2)
 	var bar:=MeshInstance3D.new();bar.mesh=BoxMesh.new();bar.scale=Vector3(2.7,.06,.06);bar.position.y=.17;bar.material_override=_material(Color("88b7b0"));cutter.add_child(bar)
 	_build_oven()
-	sparkle_root=Node3D.new();add_child(sparkle_root)
+	confetti_small=_make_confetti(12)
+	confetti_big=_make_confetti(50)
 	audio=AudioStreamPlayer.new();add_child(audio)
 
 func _build_oven() -> void:
@@ -176,9 +180,10 @@ func _show_licenses() -> void:
 
 func _reset_recipe() -> void:
 	pointer_id=NO_POINTER;painting=false;dragging_jar=false;cursor.visible=false;transitioning=false;cut_done=false
-	if is_instance_valid(donut):
-		remove_child(donut);donut.queue_free()
-	donut=Donut.new();add_child(donut);donut.position=DONUT_POS;donut.scale=DONUT_SCALE;donut.visible=false
+	if donut==null:
+		donut=Donut.new();add_child(donut)
+	else:donut.reset()
+	donut.position=DONUT_POS;donut.scale=DONUT_SCALE;donut.visible=false
 	dough.visible=true;cutter.visible=true;cutter.position=DONUT_POS+Vector3(0,.65,0);cutter.scale=DONUT_SCALE
 	oven.visible=false;door.rotation.x=PI*.43
 	celebration.text=""
@@ -339,7 +344,7 @@ func _apply_at(pos:Vector2) -> void:
 	if stage==Stage.FROST:
 		if p.distance_to(last_paint)<.045:return
 		if donut.paint(p,frosting_colors[selected_tool]):
-			last_paint=p;progress.value=minf(100,float(donut.painted_pixels)/31000*100)
+			last_paint=p;progress.value=minf(100,donut.coverage()/.8*100)
 			if sound_cooldown<=0:_chime(600+selected_tool*70,.055);sound_cooldown=.2
 	elif stage==Stage.TOP:
 		if p.distance_to(last_paint)<.13:return
@@ -347,7 +352,7 @@ func _apply_at(pos:Vector2) -> void:
 			last_paint=p
 			# A little scatter makes a single finger feel like a real sprinkle jar.
 			for i in range(2):donut.add_topping(p+Vector2(randf_range(-.15,.15),randf_range(-.15,.15)),topping_kinds[mini(selected_tool,2)])
-			if sound_cooldown<=0:_chime(randf_range(850,1200),.055);sound_cooldown=.13
+			if sound_cooldown<=0:_chime(850+randi_range(0,7)*50,.055);sound_cooldown=.13
 
 func _cut() -> void:
 	if cut_done or transitioning:return
@@ -398,28 +403,51 @@ func _process(delta:float) -> void:
 	hint.visible=pointer_id==NO_POINTER and stage in [Stage.CUT,Stage.FROST,Stage.TOP] and not transitioning
 	hint.position=camera.unproject_position(DONUT_POS+Vector3(.8,.5,0))+Vector2(sin(elapsed*2)*18,cos(elapsed*2)*10)
 	hint.modulate.a=.65+sin(elapsed*3)*.2
-	for i in range(confetti.size()-1,-1,-1):
-		var f:Dictionary=confetti[i];f.life-=delta
-		f.node.position+=f.velocity*delta;f.velocity.y-=delta*3
-		f.node.rotation+=Vector3(2,1,3)*delta
-		if f.life<.4:f.node.scale=Vector3.ONE*maxf(0,f.life/.4)
-		if f.life<=0:f.node.queue_free();confetti.remove_at(i)
 
 func _burst(center:Vector3,count:int) -> void:
-	for i in range(count):
-		var m:=BoxMesh.new();m.size=Vector3(.055,.015,.11)
-		var n:=MeshInstance3D.new();n.mesh=m;n.material_override=_material([PINK,Color("a99acb"),Color("e9bd5e"),Color("8dbca0")][i%4]);sparkle_root.add_child(n);n.position=center
-		confetti.append({"node":n,"velocity":Vector3(randf_range(-2,2),randf_range(2,4),randf_range(-1.5,1.5)),"life":randf_range(1,2)})
+	var particles:=confetti_small if count<=confetti_small.amount else confetti_big
+	particles.position=center;particles.restart()
+
+func _make_confetti(amount:int) -> CPUParticles3D:
+	# One-shot particle burst: a single draw call instead of one MeshInstance3D per piece.
+	var p:=CPUParticles3D.new()
+	p.emitting=false;p.one_shot=true;p.explosiveness=1;p.amount=amount;p.lifetime=2;p.lifetime_randomness=.5
+	var m:=BoxMesh.new();m.size=Vector3(.055,.015,.11);p.mesh=m
+	var material:=_material(Color.WHITE);material.vertex_color_use_as_albedo=true;p.material_override=material
+	p.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.direction=Vector3.UP;p.spread=60;p.initial_velocity_min=2.5;p.initial_velocity_max=4.5;p.gravity=Vector3(0,-3,0)
+	p.angular_velocity_min=-200;p.angular_velocity_max=200
+	var shrink:=Curve.new();shrink.add_point(Vector2(0,1));shrink.add_point(Vector2(.75,1));shrink.add_point(Vector2(1,0));p.scale_amount_curve=shrink
+	var palette:=Gradient.new();palette.interpolation_mode=Gradient.GRADIENT_INTERPOLATE_CONSTANT
+	palette.offsets=PackedFloat32Array([0,.25,.5,.75]);palette.colors=PackedColorArray([PINK,Color("a99acb"),Color("e9bd5e"),Color("8dbca0")])
+	p.color_initial_ramp=palette
+	add_child(p);return p
+
+func _warm_up_shaders() -> void:
+	# GL Compatibility compiles each shader variant the first time it is drawn. Draw the donut,
+	# toppings and confetti once, tiny and hidden inside the dough, so the first cut does not stall.
+	donut.visible=true;donut.scale=Vector3.ONE*.02;donut.position=dough.position;donut.set_warm_up(true)
+	var sparks:=_make_confetti(1);sparks.position=dough.position;sparks.scale_amount_min=0;sparks.scale_amount_max=0;sparks.restart()
+	# Two process frames guarantee one draw in between, and still resolve under --headless.
+	await get_tree().process_frame;await get_tree().process_frame
+	donut.set_warm_up(false);donut.visible=false;donut.scale=DONUT_SCALE;donut.position=DONUT_POS
+	get_tree().create_timer(sparks.lifetime).timeout.connect(sparks.queue_free)
 
 func _chime(hz:float,duration:=.13) -> void:
 	if not sound_on or smoke_test:return
+	var key:=Vector2i(int(hz),int(duration*1000))
+	if not chime_cache.has(key):chime_cache[key]=_synthesize_chime(hz,duration)
+	audio.stream=chime_cache[key];audio.play()
+
+func _synthesize_chime(hz:float,duration:float) -> AudioStreamWAV:
 	var rate:=22050
 	var data:=PackedByteArray();data.resize(int(duration*rate)*2)
 	for i in range(data.size()/2):
 		var t:=float(i)/rate;var envelope:=sin(PI*t/duration)*exp(-t*10)
 		var value:=int((sin(TAU*hz*t)+.22*sin(TAU*hz*2*t))*envelope*6500)
 		data.encode_s16(i*2,value)
-	var stream:=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=rate;stream.data=data;audio.stream=stream;audio.play()
+	var stream:=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=rate;stream.data=data
+	return stream
 
 func _toggle_sound() -> void:
 	sound_on=not sound_on
@@ -463,7 +491,7 @@ func _showcase() -> void:
 		donut.add_topping(Vector2(cos(a),sin(a))*r,"sprinkles" if i%4 else "stars")
 
 func _run_smoke_test() -> void:
-	await get_tree().process_frame
+	await get_tree().process_frame;await get_tree().process_frame;await get_tree().process_frame
 	assert(stage==Stage.CUT and not donut.visible)
 	_cut();await get_tree().create_timer(.85).timeout
 	assert(stage==Stage.LOAD and donut.visible and not dough.visible)
@@ -471,10 +499,10 @@ func _run_smoke_test() -> void:
 	assert(stage==Stage.FROST and not oven.visible)
 	var screen:=camera.unproject_position(DONUT_POS+Vector3(.88,.37,0))
 	_pointer_down(screen,3);_pointer_move(screen+Vector2(15,8));_pointer_up(screen)
-	assert(donut.painted_pixels>0,"Touch must paint frosting")
+	assert(donut.painted_cells>0 and donut.coverage()>0,"Touch must paint frosting")
 	assert(pointer_id==NO_POINTER,"Pointer must reset on release")
-	var before:int=donut.painted_pixels
-	_apply_at(Vector2(10,10));assert(donut.painted_pixels==before,"HUD must not paint")
+	var before:int=donut.dab_count
+	_apply_at(Vector2(10,10));assert(donut.dab_count==before,"HUD must not paint")
 	_next();assert(stage==Stage.TOP)
 	_pointer_down(screen,4);_pointer_up(screen)
 	assert(donut.topping_count>0,"Touch must add toppings")
@@ -483,7 +511,7 @@ func _run_smoke_test() -> void:
 	assert(donut.topping_count==Donut.MAX_TOPPINGS,"Toppings must be bounded")
 	_tool_pressed(3);assert(donut.topping_count==0)
 	_next();assert(stage==Stage.SERVE)
-	_next();assert(stage==Stage.CUT and donut.painted_pixels==0 and donut.topping_count==0)
+	_next();assert(stage==Stage.CUT and donut.painted_cells==0 and donut.dab_count==0 and donut.topping_count==0)
 	print("SMOKE TEST PASS: cut, bake, touch frosting, toppings, limits, serve, replay")
 	get_tree().quit()
 
